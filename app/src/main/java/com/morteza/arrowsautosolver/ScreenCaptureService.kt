@@ -145,10 +145,12 @@ class ScreenCaptureService : Service() {
                 templates = templates,
                 matchThreshold = 0.76
             )
-            Log.i(
-                TAG,
-                "Frame scanned: detections=${report.detections.size}, clear=${report.clearCount}, blocked=${report.blockedCount}, unknown=${report.unknownCount}"
+            val summary = "فلش: ${report.detections.size} | باز: ${report.clearCount} | مسدود: ${report.blockedCount} | نامشخص: ${report.unknownCount}"
+            getSystemService(NotificationManager::class.java).notify(
+                NOTIFICATION_ID,
+                buildNotification(summary)
             )
+            Log.i(TAG, "Frame scanned: detections=${report.detections.size}, clear=${report.clearCount}, blocked=${report.blockedCount}, unknown=${report.unknownCount}")
         } finally {
             frame.recycle()
         }
@@ -165,7 +167,7 @@ class ScreenCaptureService : Service() {
         }
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(message: String = "دریافت تصویر صفحه فعال است"): Notification {
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
         } else {
@@ -174,7 +176,7 @@ class ScreenCaptureService : Service() {
         }
         return builder
             .setContentTitle("Arrows Auto Solver")
-            .setContentText("دریافت تصویر صفحه فعال است")
+            .setContentText(message)
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setOngoing(true)
             .build()
