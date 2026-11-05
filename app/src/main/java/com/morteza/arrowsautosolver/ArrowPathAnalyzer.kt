@@ -13,8 +13,10 @@ data class ArrowPathResult(
 )
 
 /**
- * Checks the forward ray from each detected arrowhead against dark pixels.
- * The arrow shaft extends behind its head, so the forward ray is the exit path.
+ * Checks the forward ray from each detected arrowhead for bright foreground pixels.
+ * The game board background is black, so dark pixels are empty space; bright
+ * pixels are treated as possible arrow-body obstacles. The arrow shaft extends
+ * behind its head, so the forward ray is the exit path.
  *
  * This is an initial visibility/path test. It does not yet identify which
  * arrow owns an obstacle pixel; ownership is needed for a full move simulation.
@@ -65,7 +67,7 @@ object ArrowPathAnalyzer {
                     0.587 * ((color shr 8) and 255) +
                     0.114 * (color and 255)).toInt()
                 count++
-                if (gray < darkThreshold.coerceIn(0, 255)) {
+                if (gray > darkThreshold.coerceIn(0, 255)) {
                     obstacle = ArrowPoint(x, y)
                     break
                 }
