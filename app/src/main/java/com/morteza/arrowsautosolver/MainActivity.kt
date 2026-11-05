@@ -11,19 +11,25 @@ import android.widget.TextView
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val templates = ArrowTemplateRepository.loadAll(this)
         val title = TextView(this).apply {
-            text = "Arrows Auto Solver\n\nنسخه اولیه پروژه اندروید"
+            text = "Arrows Auto Solver\\n\\nنسخه آزمایشی توسعه"
             textSize = 22f
             setPadding(32, 48, 32, 24)
         }
         val status = TextView(this).apply {
-            text = "این نسخه هنوز الگوریتم تشخیص و حل فلش‌ها را ندارد."
+            text = "الگوهای تصویری بارگذاری‌شده: ${templates.size} از ۴\\n" +
+                "موتور محاسبه ترتیب حرکت‌ها اضافه شده است.\\n" +
+                "تشخیص خودکار تصویر و اجرای حرکت‌ها هنوز کامل نشده است."
             textSize = 16f
             setPadding(32, 12, 32, 24)
         }
         val settings = Button(this).apply {
             text = "تنظیمات دسترس‌پذیری اندروید"
-            setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
         }
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
