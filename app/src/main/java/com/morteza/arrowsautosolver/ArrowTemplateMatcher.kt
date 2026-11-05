@@ -74,7 +74,7 @@ object ArrowTemplateMatcher {
             for (scale in scales) {
                 val w = (source.width * scale).toInt().coerceAtLeast(3)
                 val h = (source.height * scale).toInt().coerceAtLeast(3)
-                if (w > region.width() || h > region.height) continue
+                if (w > region.width() || h > region.height()) continue
                 val scaled = if (w == source.width && h == source.height) source
                     else Bitmap.createScaledBitmap(source, w, h, true)
                 val tpl = makeTemplate(direction, scaled)
