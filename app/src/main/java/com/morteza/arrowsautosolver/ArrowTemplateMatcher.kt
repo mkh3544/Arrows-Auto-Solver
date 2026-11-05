@@ -1,6 +1,7 @@
 package com.morteza.arrowsautosolver
 
 import android.graphics.Bitmap
+import android.graphics.Rect
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -46,11 +47,24 @@ object ArrowTemplateMatcher {
         screenshot: Bitmap,
         templates: Map<ArrowDirection, Bitmap>,
         threshold: Double = 0.76,
-        maxDetections: Int = 300
+        maxDetections: Int = 300,
+        searchRegion: Rect? = null,
+        scanStep: Int? = null,
+        maxCandidates: Int = 6000
     ): List<ArrowHeadDetection> {
         if (screenshot.width < 3 || screenshot.height < 3 || templates.isEmpty()) {
             return emptyList()
         }
+
+        val region = (searchRegion ?: Rect(0, 0, screenshot.width, screenshot.height)).let {
+            Rect(
+                it.left.coerceIn(0, screenshot.width),
+                it.top.coerceIn(0, screenshot.height),
+                it.right.coerceIn(0, screenshot.width),
+                it.bottom.coerceIn(0, screenshot.height)
+            )
+        }
+        if (region.width() < 3 || region.height() < 3) return emptyList()
 
         val screen = grayscale(screenshot)
         val candidates = mutableListOf<Candidate>()
@@ -60,28 +74,33 @@ object ArrowTemplateMatcher {
             for (scale in scales) {
                 val w = (source.width * scale).toInt().coerceAtLeast(3)
                 val h = (source.height * scale).toInt().coerceAtLeast(3)
-                if (w > screenshot.width || h > screenshot.height) continue
+                if (w > region.width() || h > region.height) continue
                 val scaled = if (w == source.width && h == source.height) source
                     else Bitmap.createScaledBitmap(source, w, h, true)
                 val tpl = makeTemplate(direction, scaled)
                 if (tpl.norm <= 1e-8) continue
 
                 // A two-pixel scan stride limits work on full-resolution phone captures.
-                val step = if (screenshot.width * screenshot.height > 1_500_000) 3 else 2
-                var y = 0
-                while (y <= screenshot.height - h) {
-                    var x = 0
-                    while (x <= screenshot.width - w) {
+                val automaticStep = if (region.width().toLong() * region.height() > 1_500_000L) 4 else 2
+                val step = (scanStep ?: automaticStep).coerceAtLeast(1)
+                var y = region.top
+                while (y <= region.bottom - h) {
+                    var x = region.left
+                    while (x <= region.right - w) {
                         val score = correlation(screen, screenshot.width, x, y, tpl)
                         if (score >= threshold) {
                             candidates += Candidate(direction, x, y, w, h, score)
+                            if (candidates.size >= maxCandidates.coerceAtLeast(1)) break
                         }
                         x += step
                     }
+                    if (candidates.size >= maxCandidates.coerceAtLeast(1)) break
                     y += step
                 }
                 if (scaled !== source) scaled.recycle()
+                if (candidates.size >= maxCandidates.coerceAtLeast(1)) break
             }
+            if (candidates.size >= maxCandidates.coerceAtLeast(1)) break
         }
 
         // Highest-confidence matches win; overlapping boxes are suppressed.
