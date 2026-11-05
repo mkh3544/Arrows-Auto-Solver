@@ -27,6 +27,8 @@ class ScreenCaptureService : Service() {
     companion object {
         const val EXTRA_RESULT_CODE = "capture_result_code"
         const val EXTRA_RESULT_DATA = "capture_result_data"
+        const val ACTION_SCAN_UPDATE = "com.morteza.arrowsautosolver.SCAN_UPDATE"
+        const val EXTRA_SUMMARY = "scan_summary"
         private const val CHANNEL_ID = "arrows_capture"
         private const val NOTIFICATION_ID = 41
         private const val TAG = "ArrowsCapture"
@@ -150,6 +152,7 @@ class ScreenCaptureService : Service() {
                 NOTIFICATION_ID,
                 buildNotification(summary)
             )
+            sendBroadcast(Intent(ACTION_SCAN_UPDATE).setPackage(packageName).putExtra(EXTRA_SUMMARY, summary))
             Log.i(TAG, "Frame scanned: detections=${report.detections.size}, clear=${report.clearCount}, blocked=${report.blockedCount}, unknown=${report.unknownCount}")
         } finally {
             frame.recycle()
