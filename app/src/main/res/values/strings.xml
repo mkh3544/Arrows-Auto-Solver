@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Arrows Auto Solver</string>
+    <string name="accessibility_description">Allows Arrows Auto Solver to perform puzzle gestures after you enable it.</string>
+</resources>
