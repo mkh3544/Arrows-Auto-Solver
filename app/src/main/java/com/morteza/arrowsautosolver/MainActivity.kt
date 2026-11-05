@@ -1,8 +1,10 @@
 package com.morteza.arrowsautosolver
 
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -14,26 +16,40 @@ import android.widget.TextView
 class MainActivity : Activity() {
     private lateinit var status: TextView
     private val captureRequestCode = 7301
+    private var receiverRegistered = false
+
+    private val scanReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val message = intent?.getStringExtra(ScreenCaptureService.EXTRA_SUMMARY)
+            if (!message.isNullOrBlank()) status.text = message
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val templates = ArrowTemplateRepository.loadAll(this)
         val title = TextView(this).apply {
-            text = "Arrows Auto Solver\n\nنسخه آزمایشی توسعه"
+            text = "Arrows Auto Solver\n\nنسخه آزمایشی اسکن صفحه"
             textSize = 22f
             setPadding(32, 48, 32, 24)
         }
         status = TextView(this).apply {
-            text = "الگوهای تصویری بارگذاری‌شده: ${templates.size} از ۴\n" +
-                "دریافت تصویر صفحه و اسکن اولیه در حال آماده‌سازی است.\n" +
-                "حل کامل و اجرای خودکار حرکت‌ها هنوز تکمیل نشده است."
+            text = "برای شروع، بازی را باز کن و دکمه دریافت تصویر را بزن.\n" +
+                "پس از تأیید مجوز اندروید، شمارش فلش‌ها و مسیرهای باز اینجا نمایش داده می‌شود.\n\n" +
+                "توجه: این نسخه هنوز ترتیب کامل حل یا لمس خودکار را اجرا نمی‌کند."
             textSize = 16f
             setPadding(32, 12, 32, 24)
         }
         val capture = Button(this).apply {
-            text = "شروع دریافت تصویر صفحه"
+            text = "شروع دریافت تصویر و اسکن"
             setOnClickListener { requestScreenCapture() }
+        }
+        val stop = Button(this).apply {
+            text = "توقف اسکن"
+            setOnClickListener {
+                stopService(Intent(this@MainActivity, ScreenCaptureService::class.java))
+                status.text = "اسکن متوقف شد."
+            }
         }
         val settings = Button(this).apply {
             text = "تنظیمات دسترس‌پذیری اندروید"
@@ -46,9 +62,30 @@ class MainActivity : Activity() {
             addView(title)
             addView(status)
             addView(capture)
+            addView(stop)
             addView(settings)
         }
         setContentView(layout)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(ScreenCaptureService.ACTION_SCAN_UPDATE)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(scanReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(scanReceiver, filter)
+        }
+        receiverRegistered = true
+    }
+
+    override fun onStop() {
+        if (receiverRegistered) {
+            unregisterReceiver(scanReceiver)
+            receiverRegistered = false
+        }
+        super.onStop()
     }
 
     private fun requestScreenCapture() {
@@ -74,6 +111,6 @@ class MainActivity : Activity() {
         } else {
             startService(serviceIntent)
         }
-        status.text = "دریافت تصویر فعال شد. اسکن اولیه در سرویس پس‌زمینه انجام می‌شود."
+        status.text = "دریافت تصویر فعال شد؛ منتظر اولین نتیجه اسکن هستیم..."
     }
 }
